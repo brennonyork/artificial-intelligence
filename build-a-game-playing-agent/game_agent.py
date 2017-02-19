@@ -38,7 +38,20 @@ def custom_score(game, player):
         The heuristic value of the current game state to the specified player.
     """
 
-    return float(len(game.get_legal_moves(game.get_opponent(player))))
+    # Denoted 'force' as a metric not necessarily by the number of moves the
+    # opponent has, but how close they are to the edge of the board. Knowing
+    # the 'Knight'-style movement constraints the closer to the edge of the
+    # board one is the fewer moves there will be not only on the current, but
+    # future plays as well
+
+    opponent_location = game.get_player_location(game.get_opponent(player))
+
+    half_game_width = int(game.width / 2)
+    half_game_height = int(game.height / 2)
+
+    return float((half_game_width + half_game_height) - (
+            abs(opponent_location[0] - half_game_width) + 
+            abs(opponent_location[1] - half_game_height)))
 
 
 class CustomPlayer:
@@ -71,7 +84,7 @@ class CustomPlayer:
         timer expires.
     """
 
-    def __init__(self, search_depth=3, score_fn=my_moves_score,
+    def __init__(self, search_depth=3, score_fn=custom_score,
                  iterative=True, method='minimax', timeout=10.):
         self.search_depth = search_depth
         self.iterative = iterative
@@ -129,8 +142,8 @@ class CustomPlayer:
             # 0-index array
             middle_cell = (int(game.width / 2), int(game.height / 2))
 
-            # Set the default best available move as random among the options or (-1, -1)
-            # if nothing is available
+            # Set the default best available move as random among the options
+            # or (-1, -1) if nothing is available
             if legal_moves:
                 best_move = random.choice(legal_moves)
             else:
@@ -140,15 +153,13 @@ class CustomPlayer:
             if game.move_count == 0:
                 # The best first move is always the center location
                 return middle_cell
-            #if game.move_count == 1:
-                # The second best move is to first determine if the center was taken
-                # and, if not, take it
-            #    if game.move_is_legal(middle_cell):
-            #        return middle_cell
-                # Otherwise you should choose a location the opponent can't mirror
-            #    else:
-                    # TODO: this
-            #        pass
+            if game.move_count == 1:
+                # The second move should get us closest into the center of the
+                # board given the 'Knight'-style movement
+                if game.move_is_legal(middle_cell):
+                    return middle_cell
+                else:
+                    pass
 
             # The search method call (alpha beta or minimax) should happen in
             # here in order to avoid timeout. The try/except block will
@@ -156,24 +167,33 @@ class CustomPlayer:
             # when the timer gets close to expiring
 
             if self.method == 'minimax':
-                # TODO: add iterative deepening
-                score, best_move = self.minimax(game, self.search_depth)
-                    
+                if self.iterative:
+                    depth = 1
+                    while True:  # we haven't timed out yet
+                        score, best_move = self.minimax(game, depth)
+                        depth += 1  # increase depth for each iteration
+                else:
+                    score, best_move = self.minimax(game, self.search_depth)
             elif self.method == 'alphabeta':
-                pass
-            else:
-                # TODO: uh oh!
-                pass
+                if self.iterative:
+                    depth = 1
+                    while True:
+                        score, best_move = self.alphabeta(game, depth)
+                        depth += 1
+                else:
+                    score, best_move = self.alphabeta(game, self.search_depth)
+            else:  # we've made it to an incorrectly spelled method type
+                raise NameError()
 
         except Timeout:
+            pass
             # Handle any actions required at timeout, if necessary
-            return best_move
+            #return best_move
 
-        # We should never get here, but if we do...
+        ## we dont want this # We should never get here, but if we do...
+        # Return the best move from the last completed search iteration
         return best_move
 
-        # Return the best move from the last completed search iteration
-        raise NotImplementedError
 
     def minimax(self, game, depth, maximizing_player=True):
         """Implement the minimax search algorithm as described in the lectures.
