@@ -50,7 +50,7 @@ def custom_score(game, player):
     half_game_height = int(game.height / 2)
 
     return float((half_game_width + half_game_height) - (
-            abs(opponent_location[0] - half_game_width) + 
+            abs(opponent_location[0] - half_game_width) +
             abs(opponent_location[1] - half_game_height)))
 
 
@@ -186,14 +186,11 @@ class CustomPlayer:
                 raise NameError()
 
         except Timeout:
-            pass
             # Handle any actions required at timeout, if necessary
-            #return best_move
+            pass
 
-        ## we dont want this # We should never get here, but if we do...
         # Return the best move from the last completed search iteration
         return best_move
-
 
     def minimax(self, game, depth, maximizing_player=True):
         """Implement the minimax search algorithm as described in the lectures.
@@ -244,23 +241,23 @@ class CustomPlayer:
         # determine the depth from `depth` and compute out the tree
         for legal_move in legal_moves:
             forecasted_game = game.forecast_move(legal_move)
-            if depth > 1: # if we need to recur
+            if depth > 1:  # if we need to recur
                 scores.append([self.minimax(forecasted_game,
                                             depth - 1,
                                             not maximizing_player)[0],
                                legal_move])
-            else: # we need to determine a score for the forecasted game board
-                scores.append([self.score(forecasted_game, whoami), legal_move])
+            else:  # we need to determine a score for the forecasted game board
+                scores.append([self.score(forecasted_game, whoami),
+                               legal_move])
 
         # score the tree using minimax
         if maximizing_player:
             score = max(scores, key=lambda x: x[0])
-        else: # minimizing player
+        else:  # minimizing player
             score = min(scores, key=lambda x: x[0])
 
         # return the score and the tuple(int,int) for position
         return score
-
 
     def alphabeta(self,
                   game,
@@ -329,11 +326,12 @@ class CustomPlayer:
             forecasted_game = game.forecast_move(legal_move)
 
             if depth > 1:  # if we need to recur
-                score, _ = self.alphabeta(forecasted_game,
-                                          depth - 1,
-                                          alpha=alpha,
-                                          beta=beta,
-                                          maximizing_player=not maximizing_player)
+                score, _ = self.alphabeta(
+                    forecasted_game,
+                    depth - 1,
+                    alpha=alpha,
+                    beta=beta,
+                    maximizing_player=not maximizing_player)
                 # set alpha if the returned score is greater than the current
                 # alpha value
                 if maximizing_player and score > alpha:
