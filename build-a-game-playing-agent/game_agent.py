@@ -15,8 +15,7 @@ class Timeout(Exception):
 
 
 def my_moves_score(game, player):
-    return float(len(game.get_legal_moves(player))) #- 
-#                 len(game.get_legal_moves(game.get_opponent(player))))
+    return float(len(game.get_legal_moves(player)))
 
 
 def custom_score(game, player):
@@ -120,12 +119,14 @@ class CustomPlayer:
         self.time_left = time_left
 
         try:
-            # Perform any required initializations, including selecting an initial
-            # move from the game board (i.e., an opening book), or returning
-            # immediately if there are no legal moves, all of which should cost time
-            # as a human player would do this as well during their alloted time
+            # Perform any required initializations, including selecting an
+            # initial move from the game board (i.e., an opening book), or
+            # returning immediately if there are no legal moves, all of which
+            # should cost time as a human player would do this as well during
+            # their alloted time
 
-            # Some trickery to avoid an off-by-one error when accessing a 0-index array
+            # Some trickery to avoid an off-by-one error when accessing a
+            # 0-index array
             middle_cell = (int(game.width / 2), int(game.height / 2))
 
             # Set the default best available move as random among the options or (-1, -1)
@@ -215,7 +216,8 @@ class CustomPlayer:
         # determine the moves of the other (active!) player
         legal_moves = game.get_legal_moves(game.active_player)
 
-        # if no legal moves available, return the score immediately as someone won
+        # if no legal moves available, return the score immediately as someone
+        # has thus won
         if not legal_moves:
             return self.score(game, whoami)
 
@@ -225,7 +227,8 @@ class CustomPlayer:
             if depth > 1: # if we need to recur
                 scores.append([self.minimax(forecasted_game,
                                             depth - 1,
-                                            not maximizing_player)[0], legal_move])
+                                            not maximizing_player)[0],
+                               legal_move])
             else: # we need to determine a score for the forecasted game board
                 scores.append([self.score(forecasted_game, whoami), legal_move])
 
@@ -239,7 +242,12 @@ class CustomPlayer:
         return score
 
 
-    def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf"), maximizing_player=True):
+    def alphabeta(self,
+                  game,
+                  depth,
+                  alpha=float("-inf"),
+                  beta=float("inf"),
+                  maximizing_player=True):
         """Implement minimax search with alpha-beta pruning as described in the
         lectures.
 
@@ -274,5 +282,62 @@ class CustomPlayer:
         if self.time_left() < self.TIMER_THRESHOLD:
             raise Timeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # leveraged help at: http://neverstopbuilding.com/minimax
+        scores = []
+
+        # determine which player we are
+        if maximizing_player:
+            whoami = game.active_player
+        else:
+            whoami = game.inactive_player
+
+        # determine the moves of the other (active!) player
+        legal_moves = game.get_legal_moves(game.active_player)
+
+        # if no legal moves available, return the score immediately as someone
+        # has thus won
+        if not legal_moves:
+            return self.score(game, whoami)
+
+        # determine the depth from `depth` and compute out the tree
+        for legal_move in legal_moves:
+
+            # if alpha ever greater than beta, prune and continue
+            if alpha >= beta:
+                continue
+
+            forecasted_game = game.forecast_move(legal_move)
+
+            if depth > 1:  # if we need to recur
+                score, _ = self.alphabeta(forecasted_game,
+                                          depth - 1,
+                                          alpha=alpha,
+                                          beta=beta,
+                                          maximizing_player=not maximizing_player)
+                # set alpha if the returned score is greater than the current
+                # alpha value
+                if maximizing_player and score > alpha:
+                    alpha = score
+                elif not maximizing_player and score < beta:  # likewise w/beta
+                    beta = score
+
+                scores.append([score, legal_move])
+            else:  # we need to determine a score for the forecasted game board
+                score = self.score(forecasted_game, whoami)
+
+                # same as above here
+                if maximizing_player and score > alpha:
+                    alpha = score
+                elif not maximizing_player and score < beta:
+                    beta = score
+
+                scores.append([score, legal_move])
+
+        # score the tree using minimax
+        if maximizing_player:
+            score_and_move = max(scores, key=lambda x: x[0])
+        else:  # minimizing player
+            score_and_move = min(scores, key=lambda x: x[0])
+
+        # return the score and the tuple(int,int) for position
+        return score_and_move
