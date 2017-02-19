@@ -271,9 +271,15 @@ class Board(object):
         the location of each player and indicating which cells have been
         blocked, and which remain open.
         """
+        p1_r = -1
+        p1_c = -1
+        p2_r = -1
+        p2_c = -1
 
-        p1_r, p1_c = self.__last_player_move__[self.__player_1__]
-        p2_r, p2_c = self.__last_player_move__[self.__player_2__]
+        if not self.__last_player_move__[self.__player_1__] == Board.NOT_MOVED:
+            p1_r, p1_c = self.__last_player_move__[self.__player_1__]
+        if not self.__last_player_move__[self.__player_2__] == Board.NOT_MOVED:
+            p2_r, p2_c = self.__last_player_move__[self.__player_2__]
 
         out = ''
 
