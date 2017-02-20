@@ -6,6 +6,7 @@ augment the test suite with your own test cases to further test your code.
 You must test your agent's strength against a set of agents with known
 relative strength using tournament.py and include the results in your report.
 """
+import math
 import random
 
 
@@ -14,13 +15,11 @@ class Timeout(Exception):
     pass
 
 
-def my_moves_score(game, player):
-    return float(len(game.get_legal_moves(player)))
-
-
-def custom_score(game, player):
+def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
-    of the given player.
+    of the given player. This heuristic is built around the idea of keeping
+    your enemy as far as possible. This mimics `custom_score_2` except that it
+    inverts the value returned.
 
     Parameters
     ----------
@@ -38,20 +37,146 @@ def custom_score(game, player):
         The heuristic value of the current game state to the specified player.
     """
 
-    # Denoted 'force' as a metric not necessarily by the number of moves the
-    # opponent has, but how close they are to the edge of the board. Knowing
-    # the 'Knight'-style movement constraints the closer to the edge of the
-    # board one is the fewer moves there will be not only on the current, but
-    # future plays as well
+    # Return if we've won or lost with absolute best and worst scores
+    if game.is_loser(player):
+        return float('-inf')
+    elif game.is_winner(player):
+        return float('inf')
 
-    opponent_location = game.get_player_location(game.get_opponent(player))
+    my_pos = game.get_player_location(player)
+    opponent_pos = game.get_player_location(game.get_opponent(player))
+
+    best_score = math.sqrt(math.pow(0 - game.width, 2) +
+                           math.pow(0 - game.height, 2))
+
+    # Return a higher score the farther away the player is from the opponent
+    return math.sqrt(math.pow(opponent_pos[0] - my_pos[0], 2) +
+                     math.pow(opponent_pos[1] - my_pos[1], 2))
+
+
+def custom_score_2_prime(game, player):
+    """Calculate the heuristic value of a game state from the point of view
+    of the given player. This heuristic is built around the idea of keeping
+    your enemy as far as possible. This mimics `custom_score_2` except that it
+    only returns the euclidean distance.
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : object
+        A player instance in the current game (i.e., an object corresponding to
+        one of the player objects `game.__player_1__` or `game.__player_2__`.)
+
+    Returns
+    ----------
+    float
+        The heuristic value of the current game state to the specified player.
+    """
+
+    # Return if we've won or lost with absolute best and worst scores
+    if game.is_loser(player):
+        return float('-inf')
+    elif game.is_winner(player):
+        return float('inf')
+
+    my_pos = game.get_player_location(player)
+    opponent_pos = game.get_player_location(game.get_opponent(player))
+
+    best_score = math.sqrt(math.pow(0 - game.width, 2) +
+                           math.pow(0 - game.height, 2))
+
+    # Return a higher score the farther away the player is from the opponent
+    return math.sqrt(math.pow(opponent_pos[0] - my_pos[0], 2) +
+                     math.pow(opponent_pos[1] - my_pos[1], 2))
+
+
+def custom_score_2(game, player):
+    """Calculate the heuristic value of a game state from the point of view
+    of the given player. This heuristic is built around the idea of keeping
+    your enemy as close as possible. It computes the euclidean distance
+    between the two players and returns the best score (the distance between
+    (0, 0) and (game.width, game.height) ) minus the distance between the
+    players.
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : object
+        A player instance in the current game (i.e., an object corresponding to
+        one of the player objects `game.__player_1__` or `game.__player_2__`.)
+
+    Returns
+    ----------
+    float
+        The heuristic value of the current game state to the specified player.
+    """
+
+    # Return if we've won or lost with absolute best and worst scores
+    if game.is_loser(player):
+        return float('-inf')
+    elif game.is_winner(player):
+        return float('inf')
+
+    my_pos = game.get_player_location(player)
+    opponent_pos = game.get_player_location(game.get_opponent(player))
+
+    best_score = math.sqrt(math.pow(0 - game.width, 2) +
+                           math.pow(0 - game.height, 2))
+
+    # Return the inverse from the best score (length of the board diagonally)
+    # to ensure the player optimizes to get towards the opponent, rather than
+    # away
+    return best_score - math.sqrt(math.pow(opponent_pos[0] - my_pos[0], 2) +
+                                  math.pow(opponent_pos[1] - my_pos[1], 2))
+
+
+def custom_score(game, player):
+    """Calculate the heuristic value of a game state from the point of view
+    of the given player. We call this heuristic the 'force push' as it works
+    to score the player worse the farther they are to the center of the
+    board. The premise is that, for 'Knight'-style moves the farther from the
+    center of the board they are the fewer moves the have available to them,
+    not only as the current action, but for future as well.
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : object
+        A player instance in the current game (i.e., an object corresponding to
+        one of the player objects `game.__player_1__` or `game.__player_2__`.)
+
+    Returns
+    ----------
+    float
+        The heuristic value of the current game state to the specified player.
+    """
+
+    # Return if we've won or lost with absolute best and worst scores
+    if game.is_loser(player):
+        return float('-inf')
+    elif game.is_winner(player):
+        return float('inf')
+
+    opponent_pos = game.get_player_location(game.get_opponent(player))
 
     half_game_width = int(game.width / 2)
     half_game_height = int(game.height / 2)
 
+    # Return the absolute value between the central node minus the best
+    # possible score, that being the addition of the midpoint for the
+    # height and width of the board
     return float((half_game_width + half_game_height) - (
-            abs(opponent_location[0] - half_game_width) +
-            abs(opponent_location[1] - half_game_height)))
+            abs(opponent_pos[0] - half_game_width) +
+            abs(opponent_pos[1] - half_game_height)))
 
 
 class CustomPlayer:
@@ -84,7 +209,7 @@ class CustomPlayer:
         timer expires.
     """
 
-    def __init__(self, search_depth=3, score_fn=custom_score,
+    def __init__(self, search_depth=3, score_fn=custom_score_2,
                  iterative=True, method='minimax', timeout=10.):
         self.search_depth = search_depth
         self.iterative = iterative
@@ -236,7 +361,7 @@ class CustomPlayer:
         # if no legal moves available, return the score immediately as someone
         # has thus won
         if not legal_moves:
-            return self.score(game, whoami)
+            return [self.score(game, whoami), (-1, -1)]
 
         # determine the depth from `depth` and compute out the tree
         for legal_move in legal_moves:
@@ -314,7 +439,7 @@ class CustomPlayer:
         # if no legal moves available, return the score immediately as someone
         # has thus won
         if not legal_moves:
-            return self.score(game, whoami)
+            return [self.score(game, whoami), (-1, -1)]
 
         # determine the depth from `depth` and compute out the tree
         for legal_move in legal_moves:
