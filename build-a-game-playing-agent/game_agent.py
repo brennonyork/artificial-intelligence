@@ -17,9 +17,7 @@ class Timeout(Exception):
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
-    of the given player. This heuristic is built around the idea of keeping
-    your enemy as far as possible. This mimics `custom_score_2` except that it
-    inverts the value returned.
+    of the given player.
 
     Parameters
     ----------
@@ -43,6 +41,11 @@ def custom_score_3(game, player):
     elif game.is_winner(player):
         return float('inf')
 
+    # Compute the my_moves - my_opponent_moves heuristic
+    my_moves = len(game.get_legal_moves(player))
+    opponent_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    more_moves = float(my_moves - opponent_moves)
+
     my_pos = game.get_player_location(player)
     opponent_pos = game.get_player_location(game.get_opponent(player))
 
@@ -50,8 +53,10 @@ def custom_score_3(game, player):
                            math.pow(0 - game.height, 2))
 
     # Return a higher score the farther away the player is from the opponent
-    return math.sqrt(math.pow(opponent_pos[0] - my_pos[0], 2) +
-                     math.pow(opponent_pos[1] - my_pos[1], 2))
+    return ((.6 * math.sqrt(math.pow(opponent_pos[0] - my_pos[0], 2) +
+                            math.pow(opponent_pos[1] - my_pos[1], 2))) +
+            (.3 * more_moves) +
+            (.1 * len(game.get_blank_spaces())))
 
 
 def custom_score_2_prime(game, player):
@@ -209,7 +214,7 @@ class CustomPlayer:
         timer expires.
     """
 
-    def __init__(self, search_depth=3, score_fn=custom_score_2,
+    def __init__(self, search_depth=3, score_fn=custom_score_3,
                  iterative=True, method='minimax', timeout=10.):
         self.search_depth = search_depth
         self.iterative = iterative
